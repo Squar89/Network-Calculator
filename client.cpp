@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <cstring>
 
 #define ARG_COUNT 5
 #define RECV_TIMEOUT 60 //in seconds
@@ -85,8 +86,10 @@ int main(int argc, char *argv[]) {
     }
 
     /*DEBUG*/
-    if (send(sockfd, hello, strlen(hello), 0) <= 0) {
+    int sendRet;
+    if ((sendRet = send(sockfd, hello, strlen(hello), 0)) <= 0) {
         std::cerr << "Error occurred while sending data\n";
+	std::cerr << errno << "\n" << sendRet << "\n";
         return -1;
     }
     std::cout << "Message sent\n";

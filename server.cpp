@@ -4,6 +4,7 @@
 #include <string>
 #include <stdexcept>
 #include <iostream>
+#include <cstring>
 
 #define ARG_COUNT 5
 #define MAX_PORT 65535
@@ -94,8 +95,10 @@ int main(int argc, char *argv[]) {
     }
 
     /*DEBUG*/
-    if (recv(clientSock, buffer, 1024, 0) <= 0) {
+    int recvValue;
+    if ((recvValue = recv(clientSock, buffer, 1024, 0)) <= 0) {
         std::cerr << "Error occurred while receiving data\n";
+	std::cerr << errno << "\n" << recvValue << "\n";
         return -1;
     }
     std::cout << "Message received:\n" << buffer;
