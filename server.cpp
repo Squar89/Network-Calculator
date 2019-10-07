@@ -106,6 +106,9 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "Message sent\n";
     /*DEBUG*/
+
+    shutdown(clientSock, 0);
+    shutdown(serverSock, 0);
     
     return 0;
 }

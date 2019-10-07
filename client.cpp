@@ -8,11 +8,15 @@
 #include <sys/socket.h>
 
 #define ARG_COUNT 5
+#define RECV_TIMEOUT 60 //in seconds
 
 int main(int argc, char *argv[]) {
     struct sockaddr_in serverAddress;
     unsigned portNumber;
     int sockfd;
+    struct timeval tv;
+    tv.tv_sec = RECV_TIMEOUT;
+    tv.tv_usec = 0;
 
     /*DEBUG*/
     const char *hello = (std::string ("Hello from client")).c_str();
@@ -68,6 +72,12 @@ int main(int argc, char *argv[]) {
         return -1; 
     }
 
+    //set timeout on recv for created socket
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) == -1) {
+        std::cerr << "Error occurred while setting socket options\n";
+        return -1;
+    }
+
     //open connection
     if (connect(sockfd, (struct sockaddr*) &serverAddress, sizeof(serverAddress)) == -1) {
         std::cerr << "Error occurred while opening a socket connection\n";
@@ -82,6 +92,15 @@ int main(int argc, char *argv[]) {
     std::cout << "Message sent\n";
 
     if (recv(sockfd, buffer, 1024, 0) <= 0) {
+/*===================================================================================================================================================================================================*/
+        /* OK THIS IS ACTUALLY NOT A DEBUG */
+        if (errno == EWOULDBLOCK || errno == EAGAIN)
+        {
+            std::cout << "TIMEOUT";
+            return 1;
+        }
+        /* OK THIS IS ACTUALLY NOT A DEBUG */
+/*===================================================================================================================================================================================================*/
         std::cerr << "Error occurred while receiving data\n";
         return -1;
     }
