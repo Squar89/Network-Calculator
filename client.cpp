@@ -4,12 +4,20 @@
 #include <string>
 #include <stdexcept>
 #include <iostream>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #define ARG_COUNT 5
 
 int main(int argc, char *argv[]) {
     struct sockaddr_in serverAddress;
     unsigned portNumber;
+    int sockfd;
+
+    /*DEBUG*/
+    const char *hello = (std::string ("Hello from client")).c_str();
+    char buffer[1024] = {0};
+    /*DEBUG*/
 
     //check for required command line arguments
     if (argc == ARG_COUNT
@@ -49,6 +57,39 @@ int main(int argc, char *argv[]) {
                  << "./client -a <server_ipv4_address> -p <server_port_number>\n";
         return -1;
     }
+
+    //setup rest of sockaddr_in
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_port = htons(portNumber);
+
+    //open socket
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        std::cerr << "Error occurred while opening a client socket\n";
+        return -1; 
+    }
+
+    //open connection
+    if (connect(sockfd, (struct sockaddr*) &serverAddress, sizeof(serverAddress)) == -1) {
+        std::cerr << "Error occurred while opening a socket connection\n";
+        return -1; 
+    }
+
+    /*DEBUG*/
+    if (send(sockfd, hello, strlen(hello), 0) <= 0) {
+        std::cerr << "Error occurred while sending data\n";
+        return -1;
+    }
+    std::cout << "Message sent\n";
+
+    if (recv(sockfd, buffer, 1024, 0) <= 0) {
+        std::cerr << "Error occurred while receiving data\n";
+        return -1;
+    }
+    std::cout << "Message received:\n" << buffer;
+    /*DEBUG*/
+
+    //close the socket
+    shutdown(sockfd, 0);
 
     return 0;
 }

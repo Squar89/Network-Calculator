@@ -7,10 +7,19 @@
 
 #define ARG_COUNT 5
 #define MAX_PORT 65535
+#define MAX_INCOMING_Q 30
 
 int main(int argc, char *argv[]) {
     unsigned portNumber;
     unsigned long workersNumber;
+    struct sockaddr_in serverAddress, clientAddress;
+    int serverSock, clientSock;
+    unsigned long addrLen;
+
+    /*DEBUG*/
+    const char *hello = (std::string ("Hello from server")).c_str();
+    char buffer[1024] = {0};
+    /*DEBUG*/
 
     //check for required command line arguments
     if (argc == ARG_COUNT
@@ -50,9 +59,53 @@ int main(int argc, char *argv[]) {
     }
     else {
         std::cout << "Wrong command line arguments format. Correct usage:" << "\n" 
-                 << "./client -a <server_ipv4_address> -p <server_port_number>\n";
+                 << "./server -p <server_port_number> -t <number_of_workers>\n";
         return -1;
     }
+
+    //setup sockaddr_in for server side
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_port = htons(portNumber);
+    serverAddress.sin_addr.s_addr = INADDR_ANY;
+
+    //open socket
+    if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        std::cerr << "Error occurred while opening a server socket\n";
+        return -1;
+    }
+
+    //bind socket
+    if (bind(serverSock, (struct sockaddr*) &serverAddress, sizeof(serverAddress)) == -1) {
+        std::cerr << "Error occurred while binding socket\n";
+        return -1;
+    }
+
+    //start listening for incoming connections on created socket
+    if (listen(serverSock, MAX_INCOMING_Q) == -1) {
+        std::cerr << "Error occurred while starting to listen on a socket\n";
+        return -1;
+    }
+
+    //accept incoming connection and save it to clientSock
+    addrLen = sizeof(serverAddress);
+    if ((clientSock = accept(serverSock, (struct sockaddr*) &clientAddress, (socklen_t*) &addrLen)) < 0) {
+        std::cerr << "Error occurred while accepting incoming connection\n";
+        return -1;
+    }
+
+    /*DEBUG*/
+    if (recv(clientSock, buffer, 1024, 0) <= 0) {
+        std::cerr << "Error occurred while receiving data\n";
+        return -1;
+    }
+    std::cout << "Message received:\n" << buffer;
+
+    if (send(clientSock, hello, strlen(hello), 0) <= 0) {
+        std::cerr << "Error occurred while sending data\n";
+        return -1;
+    }
+    std::cout << "Message sent\n";
+    /*DEBUG*/
     
     return 0;
 }
