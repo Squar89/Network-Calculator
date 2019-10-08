@@ -9,7 +9,7 @@
 #include <cstring>
 
 #define ARG_COUNT 5
-#define RECV_TIMEOUT 60 //in seconds
+#define RECV_TIMEOUT 10 //in seconds
 #define BUFFER_SIZE 99999
 
 int main(int argc, char *argv[]) {
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
     }
 
     //send input expression to the server
-    if (send(sockfd, expression.c_str(), strlen(expression.c_str()), 0) <= 0) {
+    if (send(sockfd, expression.c_str(), strlen(expression.c_str()), 0) < 0) {
         std::cerr << "Error occurred while sending data\n";
         return -1;
     }
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
     /*DEBUG*/
 
     //wait for an answer and print it
-    if (recv(sockfd, buffer, BUFFER_SIZE, 0) <= 0) {
+    if (recv(sockfd, buffer, BUFFER_SIZE, 0) < 0) {
         if (errno == EWOULDBLOCK || errno == EAGAIN)
         {
             std::cout << "TIMEOUT";

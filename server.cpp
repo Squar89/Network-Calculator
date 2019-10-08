@@ -74,7 +74,9 @@ void listenerFunction(struct sockaddr_in serverAddress, BlockingQ<int>& requests
 
         //put the client Socket descriptor onto Blocking queue so one of the workers picks it up
         requestsQ.push(clientSock);
-
+//DEBUG
+std::cout << "Listener pushed, looping away \n";
+//DEBUG
         //loop again, waiting for another connection
     }
 
@@ -83,6 +85,87 @@ void listenerFunction(struct sockaddr_in serverAddress, BlockingQ<int>& requests
     shutdown(serverSock, 0);
 
     return;
+}
+
+std::string calculateExpression(char* expression) {
+    //DEBUG
+    std::cout << "started calculating\n";
+    //DEBUG
+    long long partialResult, lastParsed;
+    bool addInProgress, subtractInProgress, numberWasLast, firstNumber = true;
+
+    partialResult = lastParsed = 0;
+    addInProgress = subtractInProgress = false;
+    for (unsigned long i = 0; i < strlen(expression); i++) {
+        //parse the whole next number
+        if (expression[i] >= 48 && expression[i] <= 57 && !numberWasLast) {
+            while (expression[i] >= 48 && expression[i] <= 57 && i < strlen(expression)) {
+                lastParsed = lastParsed * 10 + (((int) expression[i]) - 48);
+                std::cout << "LP: " << lastParsed << "\n";
+                i++;
+                numberWasLast = true;
+            }
+        }
+        std::cout << i << "\n";
+        //a char (non whitespace) before last parsed number was a plus sign
+        if (addInProgress && numberWasLast) {
+            partialResult += lastParsed;
+            addInProgress = false;
+            lastParsed = 0;
+            firstNumber = false;
+            numberWasLast = false;
+        }
+        //a char (non whitespace) before last parsed number was a minus sign
+        else if (subtractInProgress && numberWasLast) {
+            partialResult -= lastParsed;
+            subtractInProgress = false;
+            lastParsed = 0;
+            firstNumber = false;
+            numberWasLast = false;
+        }
+
+        //first number goes directly into partialResult (unless already added by add or subtract)
+        if (firstNumber && numberWasLast) {
+            partialResult = lastParsed;
+            firstNumber = false;
+            lastParsed = 0;
+        }
+
+        //check if the last parsed number was the last one of the expression
+        if (i >= strlen(expression)) {
+            return std::to_string(partialResult);
+        }
+
+        //check if next char is a plus sign
+        if (expression[i] == '+' && !addInProgress && !subtractInProgress && !firstNumber) {
+            addInProgress = true;
+            numberWasLast = false;
+        }
+        //check if next char is a minus sign
+        else if (expression[i] == '-' && !addInProgress && !subtractInProgress && !firstNumber) {
+            subtractInProgress = true;
+            numberWasLast = false;
+        }
+        //return the result if EOL or EOF is found
+        else if ((expression[i] == EOF || expression[i] == '\n') && numberWasLast) {
+            return std::to_string(partialResult);
+        }
+        //skip the whitespace
+        else if (expression[i] == ' ' || expression[i] == 9) {}
+        //if none of these triggered, then the expression is incorrect
+        else {
+            return "ERROR";
+        }
+
+        std::cout << "i= "<< i << " pr= " <<partialResult << " last= " << lastParsed << "\n";
+    }
+
+    //expression cant finish in the middle of operation
+    if (addInProgress || subtractInProgress) {
+        return "ERROR";
+    }
+
+    return std::to_string(partialResult);
 }
 
 void workerFunction(BlockingQ<int>& requestsQ) {
@@ -94,9 +177,14 @@ void workerFunction(BlockingQ<int>& requestsQ) {
         memset(expression, 0, sizeof(expression));
         memset(response, 0, sizeof(response));
 
+        //DEBUG
+        std::cout << "Gonna wait on this as a worker\n";
+        //DEBUG
         //pickup next request socket descriptor or wait if there are none (until awaken by q)
         int clientSock = requestsQ.pop();
-
+        //DEBUG
+        std::cout << "Picked it up, initiating recv\n";
+        //DEBUG
         //receive raw format of expression from the client
         if (recv(clientSock, expression, BUFFER_SIZE, 0) < 0) {
             std::cerr << "Error occurred while receiving data\n";
@@ -108,9 +196,13 @@ void workerFunction(BlockingQ<int>& requestsQ) {
         /*DEBUG*/
 
         //parse the expression and prepare the response
-        //TODO
+        strcpy(response, (calculateExpression(expression)).c_str());
 
-        if (send(clientSock, expression, strlen(expression), 0) < 0) {//DEBUG HERE CHANGE expression BACK TO response
+        //DEBUG
+        std::cout << "Trying to send: " << response << "\n";
+        //DEBUG
+
+        if (send(clientSock, response, strlen(response), 0) < 0) {//DEBUG HERE CHANGE expression BACK TO response
             std::cerr << "Error occurred while sending data\n";
             return;
         }
