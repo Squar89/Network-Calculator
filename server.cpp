@@ -15,7 +15,6 @@
 #define MAX_INCOMING_Q 30
 #define BUFFER_SIZE 99999
 
-/*
 template <typename T>
 class BlockingQ {
 
@@ -40,19 +39,11 @@ public:
         return rc;
     }
 };
-*/
 
-void listenerFunction(struct sockaddr_in serverAddress) {
+void listenerFunction(struct sockaddr_in serverAddress, BlockingQ<int>& requestsQ) {
     int serverSock, clientSock;
     unsigned long addrLen;
     struct sockaddr_in clientAddress;
-
-    /*DEBUG*/
-    char hello[BUFFER_SIZE];
-    memset(hello, 0, sizeof(hello));
-    strcpy(hello, "Hello from server");
-    char buffer[BUFFER_SIZE];
-    /*DEBUG*/
 
     //open socket
     if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
@@ -81,27 +72,54 @@ void listenerFunction(struct sockaddr_in serverAddress) {
             return;
         }
 
-        if (recv(clientSock, buffer, 1024, 0) <= 0) {
-            std::cerr << "Error occurred while receiving data\n";
-            return;
-        }
-        std::cout << "Message received:\n" << buffer;
+        //put the client Socket descriptor onto Blocking queue so one of the workers picks it up
+        requestsQ.push(clientSock);
 
-        if (send(clientSock, hello, strlen(hello), 0) <= 0) {
-            std::cerr << "Error occurred while sending data\n";
-            return;
-        }
-        std::cout << "Message sent\n";
+        //loop again, waiting for another connection
     }
 
-    //same as thread joining, probably never going to happen but here for good measures
+    //same as thread joining in main, probably never going to happen but here for good measures
     shutdown(clientSock, 0);
     shutdown(serverSock, 0);
 
     return;
 }
 
-void workerFunction(/*BlockingQ*/int placeholder) {
+void workerFunction(BlockingQ<int>& requestsQ) {
+    char expression[BUFFER_SIZE], response[BUFFER_SIZE];
+
+    //start endless loop of receiving, calculating and responding
+    while(true) {
+        //clear previous expressions and responses
+        memset(expression, 0, sizeof(expression));
+        memset(response, 0, sizeof(response));
+
+        //pickup next request socket descriptor or wait if there are none (until awaken by q)
+        int clientSock = requestsQ.pop();
+
+        //receive raw format of expression from the client
+        if (recv(clientSock, expression, BUFFER_SIZE, 0) < 0) {
+            std::cerr << "Error occurred while receiving data\n";
+            return;
+        }
+
+        /*DEBUG*/
+        std::cout << "Message received:\n" << expression;
+        /*DEBUG*/
+
+        //parse the expression and prepare the response
+        //TODO
+
+        if (send(clientSock, expression, strlen(expression), 0) < 0) {//DEBUG HERE CHANGE expression BACK TO response
+            std::cerr << "Error occurred while sending data\n";
+            return;
+        }
+
+        /*DEBUG*/
+        std::cout << "Message sent\n";
+        /*DEBUG*/
+    }
+
     return;
 }
 
@@ -109,6 +127,7 @@ int main(int argc, char *argv[]) {
     unsigned portNumber;
     unsigned long workersNumber;
     struct sockaddr_in serverAddress;
+    BlockingQ<int> requestsQ;//queue for client requests, listener populates it, workers pop it
 
     //check for required command line arguments
     if (argc == ARG_COUNT
@@ -160,11 +179,11 @@ int main(int argc, char *argv[]) {
     std::thread workerThread[workersNumber];
     //start worker threads
     for (unsigned long i = 0; i < workersNumber; i++) {
-        workerThread[i] = std::thread(workerFunction, i);
+        workerThread[i] = std::thread(workerFunction, std::ref(requestsQ));
     }
 
     //start listener thread
-    std::thread listenerThread(listenerFunction, serverAddress);
+    std::thread listenerThread(listenerFunction, serverAddress, std::ref(requestsQ));
 
     //this will probably never happen as both listener and worker operates in endless loop
     //but I placed it here for good measures - join created threads
