@@ -98,7 +98,7 @@ std::string calculateExpression(char* expression) {
             if (numberWasLast) {
                 return "ERROR";
             }
-            
+
             while (expression[i] >= 48 && expression[i] <= 57 && i < strlen(expression)) {
                 lastParsed = lastParsed * 10 + (((int) expression[i]) - 48);
                 i++;
@@ -111,7 +111,6 @@ std::string calculateExpression(char* expression) {
             addInProgress = false;
             lastParsed = 0;
             firstNumber = false;
-            numberWasLast = false;
         }
         //a char (non whitespace) before last parsed number was a minus sign
         else if (subtractInProgress && numberWasLast) {
@@ -119,7 +118,6 @@ std::string calculateExpression(char* expression) {
             subtractInProgress = false;
             lastParsed = 0;
             firstNumber = false;
-            numberWasLast = false;
         }
 
         //first number goes directly into partialResult (unless already added by add or subtract)
