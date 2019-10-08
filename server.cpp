@@ -97,10 +97,8 @@ int main(int argc, char *argv[]) {
     }
 
     /*DEBUG*/
-    int recvValue;
-    if ((recvValue = recv(clientSock, buffer, 1024, 0)) <= 0) {
+    if (recv(clientSock, buffer, 1024, 0) <= 0) {
         std::cerr << "Error occurred while receiving data\n";
-	std::cerr << errno << "\n" << recvValue << "\n";
         return -1;
     }
     std::cout << "Message received:\n" << buffer;

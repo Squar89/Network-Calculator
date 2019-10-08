@@ -10,6 +10,7 @@
 
 #define ARG_COUNT 5
 #define RECV_TIMEOUT 60 //in seconds
+#define BUFFER_SIZE 99999
 
 int main(int argc, char *argv[]) {
     struct sockaddr_in serverAddress;
@@ -18,13 +19,8 @@ int main(int argc, char *argv[]) {
     struct timeval tv;
     tv.tv_sec = RECV_TIMEOUT;
     tv.tv_usec = 0;
-
-    /*DEBUG*/
-    char hello[1024];
-        memset(hello, 0, sizeof(hello));
-    strcpy(hello, "Hello from client");
-    char buffer[1024] = {0};
-    /*DEBUG*/
+    std::string expression;
+    char buffer[BUFFER_SIZE];
 
     //check for required command line arguments
     if (argc == ARG_COUNT
@@ -65,6 +61,9 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    //read input expression
+    std::getline(std::cin, expression);
+
     //setup rest of sockaddr_in
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(portNumber);
@@ -87,28 +86,26 @@ int main(int argc, char *argv[]) {
         return -1; 
     }
 
-    /*DEBUG*/
-    int sendRet;
-    if ((sendRet = send(sockfd, hello, strlen(hello), 0)) <= 0) {
+    //send input expression to the server
+    if (send(sockfd, expression.c_str(), strlen(expression.c_str()), 0) <= 0) {
         std::cerr << "Error occurred while sending data\n";
-	std::cerr << errno << "\n" << sendRet << "\n";
         return -1;
     }
+    /*DEBUG*/    
     std::cout << "Message sent\n";
+    /*DEBUG*/
 
-    if (recv(sockfd, buffer, 1024, 0) <= 0) {
-/*===================================================================================================================================================================================================*/
-        /* OK THIS IS ACTUALLY NOT A DEBUG */
+    //wait for an answer and print it
+    if (recv(sockfd, buffer, BUFFER_SIZE, 0) <= 0) {
         if (errno == EWOULDBLOCK || errno == EAGAIN)
         {
             std::cout << "TIMEOUT";
             return 1;
         }
-        /* OK THIS IS ACTUALLY NOT A DEBUG */
-/*===================================================================================================================================================================================================*/
         std::cerr << "Error occurred while receiving data\n";
         return -1;
     }
+    /*DEBUG*/
     std::cout << "Message received:\n" << buffer;
     /*DEBUG*/
 
