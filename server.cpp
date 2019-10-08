@@ -93,7 +93,12 @@ std::string calculateExpression(char* expression) {
     addInProgress = subtractInProgress = false;
     for (unsigned long i = 0; i < strlen(expression); i++) {
         //parse the whole next number
-        if (expression[i] >= 48 && expression[i] <= 57 && !numberWasLast) {
+        if (expression[i] >= 48 && expression[i] <= 57) {
+            //if there is a number after a number then return ERROR
+            if (numberWasLast) {
+                return "ERROR";
+            }
+            
             while (expression[i] >= 48 && expression[i] <= 57 && i < strlen(expression)) {
                 lastParsed = lastParsed * 10 + (((int) expression[i]) - 48);
                 i++;
