@@ -20,7 +20,9 @@ int main(int argc, char *argv[]) {
     tv.tv_usec = 0;
 
     /*DEBUG*/
-    const char *hello = (std::string ("Hello from client")).c_str();
+    char hello[1024];
+        memset(hello, 0, sizeof(hello));
+    strcpy(hello, "Hello from client");
     char buffer[1024] = {0};
     /*DEBUG*/
 

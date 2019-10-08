@@ -18,7 +18,9 @@ int main(int argc, char *argv[]) {
     unsigned long addrLen;
 
     /*DEBUG*/
-    const char *hello = (std::string ("Hello from server")).c_str();
+    char hello[1024];
+    memset(hello, 0, sizeof(hello));
+    strcpy(hello, "Hello from server");
     char buffer[1024] = {0};
     /*DEBUG*/
 
