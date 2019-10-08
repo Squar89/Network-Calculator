@@ -74,9 +74,7 @@ void listenerFunction(struct sockaddr_in serverAddress, BlockingQ<int>& requests
 
         //put the client Socket descriptor onto Blocking queue so one of the workers picks it up
         requestsQ.push(clientSock);
-//DEBUG
-std::cout << "Listener pushed, looping away \n";
-//DEBUG
+
         //loop again, waiting for another connection
     }
 
@@ -88,11 +86,8 @@ std::cout << "Listener pushed, looping away \n";
 }
 
 std::string calculateExpression(char* expression) {
-    //DEBUG
-    std::cout << "started calculating\n";
-    //DEBUG
     long long partialResult, lastParsed;
-    bool addInProgress, subtractInProgress, numberWasLast, firstNumber = true;
+    bool addInProgress, subtractInProgress, numberWasLast = false, firstNumber = true;
 
     partialResult = lastParsed = 0;
     addInProgress = subtractInProgress = false;
@@ -101,12 +96,10 @@ std::string calculateExpression(char* expression) {
         if (expression[i] >= 48 && expression[i] <= 57 && !numberWasLast) {
             while (expression[i] >= 48 && expression[i] <= 57 && i < strlen(expression)) {
                 lastParsed = lastParsed * 10 + (((int) expression[i]) - 48);
-                std::cout << "LP: " << lastParsed << "\n";
                 i++;
                 numberWasLast = true;
             }
         }
-        std::cout << i << "\n";
         //a char (non whitespace) before last parsed number was a plus sign
         if (addInProgress && numberWasLast) {
             partialResult += lastParsed;
@@ -156,8 +149,6 @@ std::string calculateExpression(char* expression) {
         else {
             return "ERROR";
         }
-
-        std::cout << "i= "<< i << " pr= " <<partialResult << " last= " << lastParsed << "\n";
     }
 
     //expression cant finish in the middle of operation
@@ -177,39 +168,22 @@ void workerFunction(BlockingQ<int>& requestsQ) {
         memset(expression, 0, sizeof(expression));
         memset(response, 0, sizeof(response));
 
-        //DEBUG
-        std::cout << "Gonna wait on this as a worker\n";
-        //DEBUG
         //pickup next request socket descriptor or wait if there are none (until awaken by q)
         int clientSock = requestsQ.pop();
-        //DEBUG
-        std::cout << "Picked it up, initiating recv\n";
-        //DEBUG
+
         //receive raw format of expression from the client
         if (recv(clientSock, expression, BUFFER_SIZE, 0) < 0) {
             std::cerr << "Error occurred while receiving data\n";
             return;
         }
 
-        /*DEBUG*/
-        std::cout << "Message received:\n" << expression;
-        /*DEBUG*/
-
         //parse the expression and prepare the response
         strcpy(response, (calculateExpression(expression)).c_str());
 
-        //DEBUG
-        std::cout << "Trying to send: " << response << "\n";
-        //DEBUG
-
-        if (send(clientSock, response, strlen(response), 0) < 0) {//DEBUG HERE CHANGE expression BACK TO response
+        if (send(clientSock, response, strlen(response), 0) < 0) {
             std::cerr << "Error occurred while sending data\n";
             return;
         }
-
-        /*DEBUG*/
-        std::cout << "Message sent\n";
-        /*DEBUG*/
     }
 
     return;

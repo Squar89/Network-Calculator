@@ -91,9 +91,6 @@ int main(int argc, char *argv[]) {
         std::cerr << "Error occurred while sending data\n";
         return -1;
     }
-    /*DEBUG*/    
-    std::cout << "Message sent\n";
-    /*DEBUG*/
 
     //wait for an answer and print it
     if (recv(sockfd, buffer, BUFFER_SIZE, 0) < 0) {
@@ -105,9 +102,10 @@ int main(int argc, char *argv[]) {
         std::cerr << "Error occurred while receiving data\n";
         return -1;
     }
-    /*DEBUG*/
-    std::cout << "Message received:\n" << buffer;
-    /*DEBUG*/
+
+    //print out response from server
+    std::cout << buffer;
+    
 
     //close the socket
     shutdown(sockfd, 0);
