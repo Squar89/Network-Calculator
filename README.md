@@ -9,18 +9,18 @@ The client reads from the standard input an arithmetic expression. Such an expre
 
 The server opens a TCP port (specified as a command line parameter) and spawns k+1 threads (where k is another command line parameter): 1 listener thread and k worker threads. The listener thread repeatedly listens on the specified port for incoming TCP connections. When a connection is established, the thread passes the connection to one of the workers. A worker thread repeatedly waits for established connections from the listener. When such a connection is passed, it receives the expression sent by the corresponding client, computes it, and replies with the result. If the expression is invalid, the result is ERROR. If there are no free workers to which an incoming connection can be passed, the listener waits until such a worker appears.
 
-Running a client:
-
+Running a client:  
 ./client.sh -a <server_ipv4_address> -p <server_port_number>
-Running a server:
 
+Running a server:  
 ./server.sh -p <server_port_number> -t <k>
-Sample valid input:
 
-1- 3    +10-111111+13
-Sample invalid inputs:
+Sample valid input:  
+1- 3  
++10-111111+13  
 
-1+-3
-+1
--1
-1+3-
+Sample invalid inputs:  
+1+-3  
++1  
+-1  
+1+3-  
